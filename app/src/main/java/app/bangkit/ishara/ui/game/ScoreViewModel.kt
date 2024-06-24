@@ -11,6 +11,7 @@ import app.bangkit.ishara.data.responses.journey.level_star.UpdateLevelErrorResp
 import app.bangkit.ishara.data.responses.login.error.LoginErrorResponse
 import app.bangkit.ishara.data.retrofit.ApiConfig
 import com.google.gson.Gson
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class ScoreViewModel(private val pref: UserPreference) : ViewModel() {
@@ -26,9 +27,9 @@ class ScoreViewModel(private val pref: UserPreference) : ViewModel() {
 
     fun postLevelStar(obtainedStar: Int, levelId: Int) {
         _isLoading.value = true
-        val token = pref.getJwtAccessToken()
         viewModelScope.launch {
             try {
+                val token = pref.getJwtAccessToken().first()
                 val updateLevelRequest = UpdateLevelRequest(obtainedStar)
                 val response = ApiConfig.getApiService().postLevelStars(
                     token = "Bearer $token",
@@ -42,9 +43,10 @@ class ScoreViewModel(private val pref: UserPreference) : ViewModel() {
             } catch (e: Exception) {
                 if (e is retrofit2.HttpException) {
                     val errorBody = e.response()?.errorBody()?.string()
-                    val errorResponse = Gson().fromJson(errorBody, UpdateLevelErrorResponse::class.java)
+                    val errorResponse =
+                        Gson().fromJson(errorBody, UpdateLevelErrorResponse::class.java)
                     _errorMessage.value = "Update Star failed: ${errorResponse.meta!!.success}"
-                    Log.d(TAG, "error: ${errorResponse.meta!!.success}")
+                    Log.d(TAG, "error: ${errorResponse.meta.success}")
                     Log.d(TAG, "levelid error: $levelId")
 
                 } else {
